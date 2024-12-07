@@ -91,7 +91,8 @@ func getIconHandler(c echo.Context) error {
 	username := c.Param("username")
 	iconHash, _ := cache.iconHash.Get(ctx, username)
 	hashString := fmt.Sprintf("%x", iconHash.Value)
-	if iconHash.Found && hashString == c.Request().Header.Get("If-None-Match") {
+	headerHash := strings.Trim(c.Request().Header.Get("If-None-Match"), "\"")
+	if iconHash.Found && hashString == headerHash {
 		return c.NoContent(http.StatusNotModified)
 	}
 
