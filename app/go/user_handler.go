@@ -89,6 +89,11 @@ func getIconHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	username := c.Param("username")
+	iconHash, _ := cache.iconHash.Get(ctx, username)
+	hashString := fmt.Sprintf("%x", iconHash.Value)
+	if iconHash.Found && hashString == c.Request().Header.Get("If-None-Match") {
+		return c.NoContent(http.StatusNotModified)
+	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
@@ -128,6 +133,7 @@ func postIconHandler(c echo.Context) error {
 	sess, _ := session.Get(defaultSessionIDKey, c)
 	// existence already checked
 	userID := sess.Values[defaultUserIDKey].(int64)
+	userName := sess.Values[defaultUsernameKey].(string)
 
 	var req *PostIconRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
@@ -148,6 +154,7 @@ func postIconHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert new user icon: "+err.Error())
 	}
+	cache.iconHash.Set(ctx, userName, sha256.Sum256(req.Image))
 
 	iconID, err := rs.LastInsertId()
 	if err != nil {
@@ -405,16 +412,21 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 	}
 
 	var image []byte
-	if err := tx.GetContext(ctx, &image, "SELECT image FROM icons WHERE user_id = ?", userModel.ID); err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return User{}, err
+	cachedImage, _ := cache.iconHash.Get(ctx, userModel.Name)
+	iconHash := cachedImage.Value
+	if !cachedImage.Found {
+		if err := tx.GetContext(ctx, &image, "SELECT image FROM icons WHERE user_id = ?", userModel.ID); err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return User{}, err
+			}
+			image, err = os.ReadFile(fallbackImage)
+			if err != nil {
+				return User{}, err
+			}
 		}
-		image, err = os.ReadFile(fallbackImage)
-		if err != nil {
-			return User{}, err
-		}
+		iconHash = sha256.Sum256(image)
+		cache.iconHash.Set(ctx, userModel.Name, iconHash)
 	}
-	iconHash := sha256.Sum256(image)
 
 	user := User{
 		ID:          userModel.ID,
