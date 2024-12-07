@@ -127,7 +127,7 @@ func initializeHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize: "+err.Error())
 	}
 
-	http.Get("http://localhost:9000/api/group/collect")
+	http.Get("https://pprotein.kmzk.dev/api/group/collect")
 
 	c.Request().Header.Add("Content-Type", "application/json;charset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
