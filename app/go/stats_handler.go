@@ -250,7 +250,7 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 					 LEFT JOIN livecomments l2 ON l.id = l2.livestream_id
 			GROUP BY l.id
 			ORDER BY l.id DESC;
-	`, livestream.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	`); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to count tips: "+err.Error())
 	}
 
