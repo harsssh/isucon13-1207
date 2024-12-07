@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/isucon/isucon13/webapp/go/util"
 	"log"
 	"net"
 	"net/http"
@@ -22,6 +23,19 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	echolog "github.com/labstack/gommon/log"
 )
+
+type Cache struct {
+	iconHash util.Cache[string, [32]byte]
+}
+
+func NewCache() *Cache {
+	iconHash, _ := util.NewInMemoryLRUCache[string, [32]byte](1000)
+	return &Cache{
+		iconHash: iconHash,
+	}
+}
+
+var cache = NewCache()
 
 const (
 	listenPort                     = 8080
