@@ -11,7 +11,7 @@ vars:
     /etc/nginx
     /etc/sysctl.d
     /etc/powerdns
-  COLLECT_TARGET_SERVICE: mysql nginx pdns isupipe
+  COLLECT_TARGET_SERVICE: mysql nginx pdns isupipe-go
   #
   # Rarely changed
   REPO_DIR:
